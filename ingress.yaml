@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kibanan
+  namespace: kube-system
+  annotations:
+    #nginx.ingress.kubernetes.io/whitelist-source-range: '202.105.108.157'   # 访问白名单
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: "-uat.cssil.com.hk"
+    http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: kibana
+            port:
+              number: 80
+  tls:
+    - hosts:
+        - .cssil.com.hk
+      secretName: ingress-certs

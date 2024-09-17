@@ -1,0 +1,271 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logstash
+  namespace: kube-system
+spec:
+  ports:
+  - port: 5044
+    targetPort: beats
+  selector:
+    type: logstash
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      type: logstash
+  template:
+    metadata:
+      labels:
+        type: logstash
+        srv: srv-logstash
+    spec:
+      containers:
+      - image: docker.io/kubeimages/logstash:7.9.3
+        name: logstash
+        ports:
+        - containerPort: 5044
+          name: beats
+        command:
+        - logstash
+        - '-f'
+        - '/etc/logstash_c/logstash.conf'
+        env:
+        - name: "XPACK_MONITORING_ELASTICSEARCH_HOSTS"
+          value: "http://elasticsearch-logging:9200"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/logstash_c/
+        - name: config-yml-volume
+          mountPath: /usr/share/logstash/config/
+        - name: timezone
+          mountPath: /etc/localtime
+        resources: #logstash一定要加上资源限制，避免对其他业务造成资源抢占影响
+          limits:
+            cpu: 1000m
+            memory: 2048Mi
+          requests:
+            cpu: 512m
+            memory: 512Mi
+      volumes:
+      - name: config-volume
+        configMap:
+          name: logstash-conf
+          items:
+          - key: logstash.conf
+            path: logstash.conf
+      - name: timezone
+        hostPath:
+          path: /etc/localtime
+      - name: config-yml-volume
+        configMap:
+          name: logstash-yml
+          items:
+          - key: logstash.yml
+            path: logstash.yml
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-conf
+  namespace: kube-system
+  labels:
+    type: logstash
+data:
+  # inout输入从 Filebeat 接收数据，监听端口 5044。
+  # filter过滤器
+    # [kubernetes][container][name] =~ /^srv*/ 表示：解析以 srv 开头的容器日志，并根据条件进行字段转换和处理。 
+  # mutate通用字段处理
+  # output输出，将处理后的日志数据发送到 Elasticsearch，使用 JSON 编码，并按日期创建索引。
+  logstash.conf: |-
+    input {
+      beats {
+      port => 5044
+      }
+     }
+
+     filter{
+     if [kubernetes][container][name] == "nginx-ingress-controller" {
+            json {
+       source => "message"
+       target => "ingress_log"
+     }
+     if [ingress_log][requesttime] {
+         mutate {
+        convert => ["[ingress_log][requesttime]", "float"]
+    }
+    }
+     if [ingress_log][upstremtime] {
+         mutate {
+        convert => ["[ingress_log][upstremtime]", "float"]
+    }
+
+    }
+     if [ingress_log][status] {
+         mutate {
+        convert => ["[ingress_log][status]", "float"]
+    }
+
+    }
+     if  [ingress_log][httphost] and [ingress_log][uri] {
+         mutate {
+        add_field => {"[ingress_log][entry]" => "%{[ingress_log][httphost]}%{[ingress_log][uri]}"}
+
+
+
+    }
+         mutate{
+         split => ["[ingress_log][entry]","/"]
+       }
+         if [ingress_log][entry][1] {
+         mutate{
+         add_field => {"[ingress_log][entrypoint]" => "%{[ingress_log][entry][0]}/%{[ingress_log][entry][1]}"}
+         remove_field => "[ingress_log][entry]"
+         }
+         }
+         else{
+          mutate{
+          add_field => {"[ingress_log][entrypoint]" => "%{[ingress_log][entry][0]}/"}
+          remove_field => "[ingress_log][entry]"
+         }
+         }
+
+
+
+
+    }
+    }
+     # 处理以srv进行开头的业务服务日志
+     if [kubernetes][container][name] =~ /^srv*/ {
+       json {
+       source => "message"
+       target => "tmp"
+     }
+
+    if [kubernetes][namespace] == "kube-system" {
+
+       drop{}
+     }
+
+     # 这段配置检查日志事件中是否存在 [tmp][method] 字段。如果存在，它会使用 mutate 插件将 [tmp][level] 的值复制到 [applog][level] 字段中。
+       if [tmp][level] {
+       mutate{
+       add_field => {"[applog][level]" => "%{[tmp][level]}"}
+
+     }
+       if [applog][level] == "debug"{
+       drop{}
+     }
+     }
+       if [tmp][msg]{
+      mutate{
+       add_field => {"[applog][msg]" => "%{[tmp][msg]}"}
+     }
+     }
+       if [tmp][func]{
+      mutate{
+       add_field => {"[applog][func]" => "%{[tmp][func]}"}
+     }
+     }
+      if [tmp][cost]{
+        if "ms" in [tmp][cost]{
+
+
+        mutate{
+          split => ["[tmp][cost]","m"]
+          add_field => {"[applog][cost]" => "%{[tmp][cost][0]}"}
+          convert => ["[applog][cost]", "float"]
+        }
+        }
+        else{
+        mutate{
+        add_field => {"[applog][cost]" => "%{[tmp][cost]}"}
+      }
+      }
+     }
+      if [tmp][method]{
+      mutate{
+       add_field => {"[applog][method]" => "%{[tmp][method]}"}
+     }
+     }
+      if [tmp][request_url]{
+      mutate{
+       add_field => {"[applog][request_url]" => "%{[tmp][request_url]}"}
+     }
+     }
+       if [tmp][meta._id]{
+       mutate{
+       add_field => {"[applog][traceId]" => "%{[tmp][meta._id]}"}
+     }
+     }
+
+
+       if [tmp][project] {
+       mutate{
+       add_field => {"[applog][project]" => "%{[tmp][project]}"}
+     }
+     }
+       if [tmp][time] {
+       mutate{
+       add_field => {"[applog][time]" => "%{[tmp][time]}"}
+     }
+     }
+       if [tmp][status] {
+       mutate{
+       add_field => {"[applog][status]" => "%{[tmp][status]}"}
+       convert => ["[applog][status]", "float"]
+     }
+     }
+     }
+
+
+    mutate{
+      # 这条指令将日志事件中的 kubernetes 字段重命名为 k8s。
+      rename => ["kubernetes", "k8s"]
+    # 这几条指令分别删除了日志事件中的 beat 字段、tmp 字段和 [k8s][labels][app] 字段。
+         # 删除字段的目的是为了简化日志事件，去掉不需要的或多余的信息。
+             ## 字段标准化：通过重命名字段，可以统一不同日志源的字段名称，方便后续处理和查询。
+                 ## 日志精简：通过删除不必要的字段，减少日志事件的大小，提高日志处理的效率和存储利用率。
+                     ## 清理临时字段：临时字段（如 tmp）可能在日志处理过程中用于中间计算或存储临时数据，最终这些字段会被删除，以保持日志的简洁。
+      remove_field => "beat"
+      remove_field => "tmp"
+      remove_field => "[k8s][labels][app]"
+    }
+
+    }
+
+
+    output{
+      elasticsearch {
+
+        hosts => ["http://elasticsearch-logging:9200"]
+
+        codec => json
+
+        index => "logstash-%{+YYYY.MM.dd}"  #索引名称以logstash+日志进行每日新建
+
+        }
+      }
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-yml
+  namespace: kube-system
+  labels:
+    type: logstash
+data:
+  logstash.yml: |-
+    # 使得 Logstash 可以通过任何网络接口访问，对于容器化环境和集群内部服务非常有用。
+    http.host: "0.0.0.0"
+    # 这个设置定义了用于 X-Pack 监控的 Elasticsearch 实例的地址。 http://elasticsearch-logging:9200 是 Elasticsearch 集群的地址，Logstash 将使用它来发送监控数据。
+    xpack.monitoring.elasticsearch.hosts: http://elasticsearch-logging:9200
