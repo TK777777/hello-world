@@ -30,12 +30,12 @@
 ### 1. 编写配置文件
 确保根目录下存在 `docker-compose.yml` 和 `requirements.txt`。
 
-### 2. 一键启动
-自动构建镜像并后台启动
-docker-compose up --build -d
+### 2. 启动
+构建镜像并后台启动
+docker build -t ops-navigation .
+docker-compose up -d
 
 ### 3. 环境变量说明
-
 在 `docker-compose.yml` 中可通过环境变量修改管理员密码：
 environment:
   - TZ=Asia/Shanghai
