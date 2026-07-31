@@ -4,6 +4,7 @@ WORKDIR /app
 
 # 安装依赖
 COPY requirements.txt .
+# 注意requirements.txt需存放当前目录
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 复制代码与模板
