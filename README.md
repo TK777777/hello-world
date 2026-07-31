@@ -40,14 +40,3 @@ docker-compose up --build -d
 environment:
   - TZ=Asia/Shanghai
   - ADMIN_PASSWORD=你的安全密码
-
-
-## 📂 目录结构
-.
-├── app.py              # 后端主程序（包含 API 与网络健康探测）
-├── Dockerfile          # 容器构建文件（自带所有依赖，开箱即用）
-├── docker-compose.yml  # Docker 编排文件
-├── requirements.txt    # Python 依赖包列表
-├── templates/
-│   └── index.html      # 前端交互与炫酷 UI 界面
-└── data/               # 挂载目录（持久化存放 links.json 与 avatar.png）
