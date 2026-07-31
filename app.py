@@ -1,13 +1,12 @@
 import json
 import os
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import Flask, jsonify, render_template, request
 import requests
 
 app = Flask(__name__)
 DATA_DIR = "/app/data"
 DATA_FILE = os.path.join(DATA_DIR, "links.json")
-AVATAR_FILE = os.path.join(DATA_DIR, "avatar.png")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "7777777")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
 
 
 def load_data():
@@ -138,39 +137,15 @@ def check_status():
   if not target_url:
     return jsonify({"status": False})
   try:
-    # 尝试发起请求，设置较短超时避免阻塞
     response = requests.get(
         target_url, timeout=3, verify=False, allow_redirects=True
     )
-    # 只要能正常响应（状态码小于500，或粗略判定连通）即认为绿灯
     if response.status_code < 500:
       return jsonify({"status": True})
     else:
       return jsonify({"status": False})
   except Exception:
     return jsonify({"status": False})
-
-
-# 头像上传接口
-@app.route("/api/avatar", methods=["POST"])
-def upload_avatar():
-  if "avatar" not in request.files:
-    return jsonify({"success": False, "message": "未找到上传文件"}), 400
-  file = request.files["avatar"]
-  if file.filename == "":
-    return jsonify({"success": False, "message": "文件名为空"}), 400
-
-  os.makedirs(DATA_DIR, exist_ok=True)
-  file.save(AVATAR_FILE)
-  return jsonify({"success": True, "message": "头像更新成功"})
-
-
-# 获取头像接口
-@app.route("/api/avatar", methods=["GET"])
-def get_avatar():
-  if os.path.exists(AVATAR_FILE):
-    return send_from_directory(DATA_DIR, "avatar.png")
-  return "", 404
 
 
 if __name__ == "__main__":

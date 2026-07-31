@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>导航中心</title>
-    <link rel="icon" id="favicon" href="https://api.iconify.design/fluent-emoji-flat:robot.svg">
+    <!-- 保留浏览器标签页图标 -->
+    <link rel="icon" href="https://api.iconify.design/fluent-emoji-flat:robot.svg">
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; display: flex; min-height: 100vh; box-sizing: border-box; }
         
@@ -19,12 +20,6 @@
 
         .header-bar { display: flex; justify-content: space-between; align-items: center; max-width: 1100px; margin: 0 auto 30px auto; }
         .logo-area { display: flex; align-items: center; gap: 15px; }
-        
-        .avatar-container { position: relative; cursor: pointer; display: inline-block; }
-        .avatar-img { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; border: 2px solid #334155; background: #1e293b; transition: border-color 0.2s; }
-        .avatar-container:hover .avatar-img { border-color: #38bdf8; }
-        .avatar-mask { position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.7); color: white; font-size: 9px; padding: 2px 4px; border-radius: 4px; opacity: 0; transition: opacity 0.2s; }
-        .avatar-container:hover .avatar-mask { opacity: 1; }
 
         .btn-group { display: flex; gap: 10px; }
         button { background: #3b82f6; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
@@ -88,12 +83,6 @@
     <div class="main-content">
         <div class="header-bar">
             <div class="logo-area">
-                <div class="avatar-container" onclick="document.getElementById('avatarInput').click()" title="点击更换头像">
-                    <img id="siteAvatar" src="/api/avatar" onerror="this.src='https://api.iconify.design/fluent-emoji-flat:robot.svg'" class="avatar-img" alt="Avatar">
-                    <div class="avatar-mask">更换</div>
-                </div>
-                <input type="file" id="avatarInput" style="display:none" accept="image/*" onchange="uploadAvatar(this)">
-                <!-- 导航中心标题 -->
                 <h1 style="margin: 0; font-size: 1.8rem;">导航中心</h1>
             </div>
             <div class="btn-group">
@@ -208,7 +197,6 @@
                             </div>
                         `;
 
-                        // 异步并发测试每个网页的连通性
                         if (links.length > 0) {
                             links.forEach((link, index) => {
                                 testLinkStatus(link.url, `dot-${category}-${index}`);
@@ -218,7 +206,6 @@
                 });
         }
 
-        // 异步请求后端检测网址状态
         function testLinkStatus(url, dotId) {
             fetch('/api/check-status', {
                 method: 'POST',
@@ -247,7 +234,6 @@
             });
         }
 
-        // 点击左侧目录跳转，炫酷彩光环绕旋转高亮特效
         function scrollToCategory(category) {
             const el = document.getElementById(`cat-${category}`);
             if (el) {
@@ -255,7 +241,7 @@
                 el.classList.add('highlight');
                 setTimeout(() => {
                     el.classList.remove('highlight');
-                }, 2000); // 持续2秒彩光环绕
+                }, 2000);
             }
             document.querySelectorAll('.sidebar-menu li').forEach(li => {
                 if (li.innerText === category) li.classList.add('active');
@@ -278,36 +264,6 @@
         function executeSecuredAction() {
             const password = document.getElementById('actionPassword').value;
             if (currentActionCallback) currentActionCallback(password);
-        }
-
-        function uploadAvatar(input) {
-            if (input.files && input.files[0]) {
-                const formData = new FormData();
-                formData.append('avatar', input.files[0]);
-                
-                fetch('/api/avatar', { method: 'POST', body: formData })
-                .then(res => res.json())
-                .then(res => {
-                    if(res.success) {
-                        // 加上时间戳避免浏览器强缓存
-                        const newSrc = '/api/avatar?t=' + new Date().getTime();
-                        
-                        // 1. 更新页面左上角的头像
-                        document.getElementById('siteAvatar').src = newSrc;
-                        
-                        // 2. 实时同步更新浏览器标签页的 Favicon 图标
-                        document.getElementById('favicon').href = newSrc;
-                        
-                        alert('头像更新成功，标签页图标已同步！');
-                    } else { 
-                        alert(res.message || '头像上传失败'); 
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert('头像上传请求失败');
-                });
-            }
         }
 
         function submitCategory() {
