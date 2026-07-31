@@ -1,8 +1,3 @@
-# ops-navigation
-
-一个基于 Python Flask 和 Docker 构建的轻量级现代化运维导航中心，支持网站红绿灯健康度探测、安全权限校验、自定义头像持久化与炫酷彩光分类高亮。
-
-
 # 🚀 Ops-Nav 运维导航中心
 
 一个轻量级、现代化的企业级运维网址导航与健康监控系统。旨在帮助运维与开发团队高效管理内部各类系统（如 CI/CD、监控、堡垒机等），并实时监控网页健康状态。
@@ -39,4 +34,4 @@ docker-compose up -d
 在 `docker-compose.yml` 中可通过环境变量修改管理员密码：
 environment:
   - TZ=Asia/Shanghai
-  - ADMIN_PASSWORD=你的安全密码
+  - ADMIN_PASSWORD=你的安全密码，默认密码7777777
