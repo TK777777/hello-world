@@ -27,8 +27,8 @@
 
 ### 2. 启动
 构建镜像并后台启动
-docker build -t ops-navigation .
-docker-compose up -d
+- docker build -t ops-navigation .
+- docker-compose up -d
 
 ### 3. 环境变量说明
 在 `docker-compose.yml` 中可通过环境变量修改管理员密码：
