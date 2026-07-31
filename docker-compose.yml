@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  ops-navigation:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+    image: ops-navigation:latest
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data  # 仅挂载持久化数据目录，不覆盖代码与依赖
+    environment:
+      - TZ=Asia/Shanghai
+      - ADMIN_PASSWORD=7777777
+    networks:
+      - ops_net
+
+networks:
+  ops_net:
+    driver: bridge
