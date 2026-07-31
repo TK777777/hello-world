@@ -38,4 +38,5 @@
 
 ## 🏞️ 页面展示
 
+- 访问地址：ip:8000
 <img width="1912" height="948" alt="image" src="https://github.com/user-attachments/assets/a512f38c-fc47-4560-beb1-cbe735f365fd" />
