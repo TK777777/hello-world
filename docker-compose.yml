@@ -2,6 +2,7 @@ version: '3'
 
 services:
   ops-navigation:
+#该方法依赖本地安装build工具
 #    build:
 #      context: .
 #      dockerfile: Dockerfile
