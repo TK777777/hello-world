@@ -32,6 +32,4 @@
 
 ### 3. 环境变量说明
 在 `docker-compose.yml` 中可通过环境变量修改管理员密码：
-environment:
-  - TZ=Asia/Shanghai
   - ADMIN_PASSWORD=你的安全密码，默认密码7777777
