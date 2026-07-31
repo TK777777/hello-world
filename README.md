@@ -31,7 +31,7 @@
 确保根目录下存在 `docker-compose.yml` 和 `requirements.txt`。
 
 ### 2. 一键启动
-# 自动构建镜像并后台启动
+自动构建镜像并后台启动
 docker-compose up --build -d
 
 ### 3. 环境变量说明
